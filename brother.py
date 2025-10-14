@@ -163,7 +163,7 @@ def send_to_zabbix(hostname, data, zabbix_server="127.0.0.1", zabbix_port=10051)
         if 'toner' in data:
             print("\n📊 Sending Toner levels...")
             for color, level in data['toner'].items():
-                item_key = f'brother.toner.{color}'
+                item_key = f'{color}.toner.level'
                 cmd = [
                     'zabbix_sender',
                     '-z', zabbix_server,
@@ -186,7 +186,7 @@ def send_to_zabbix(hostname, data, zabbix_server="127.0.0.1", zabbix_port=10051)
         if 'drum' in data:
             print("\n🥁 Sending Drum Unit levels...")
             for color, level in data['drum'].items():
-                item_key = f'brother.drum.{color}'
+                item_key = f'{color}.drum.level'
                 cmd = [
                     'zabbix_sender',
                     '-z', zabbix_server,
