@@ -33,16 +33,16 @@ def extract_printer_data(html_content):
             
         value_text = dd.get_text().strip()
         
-        # Extract Toner levels
-        if 'Toner' in text and '**' in text:
+        # Extract Toner levels (Spanish: Tóner)
+        if ('Toner' in text or 'Tóner' in text) and '**' in text:
             color = None
-            if 'Cyan' in text:
+            if 'Cyan' in text or 'Cian' in text:
                 color = 'cyan'
             elif 'Magenta' in text:
                 color = 'magenta'
-            elif 'Yellow' in text:
+            elif 'Yellow' in text or 'Amarillo' in text:
                 color = 'yellow'
-            elif 'Black' in text:
+            elif 'Black' in text or 'Negro' in text:
                 color = 'black'
             
             if color:
@@ -50,16 +50,16 @@ def extract_printer_data(html_content):
                 if match:
                     data['toner'][color] = int(match.group(1))
         
-        # Extract Drum Unit levels
-        elif 'Drum Unit' in text and '*' in text:
+        # Extract Drum Unit levels (Spanish: Unidad de tambor)
+        elif ('Drum Unit' in text or 'Unidad de tambor' in text or 'tambor' in text) and '*' in text:
             color = None
-            if 'Cyan' in text:
+            if 'Cyan' in text or 'Cian' in text:
                 color = 'cyan'
             elif 'Magenta' in text:
                 color = 'magenta'
-            elif 'Yellow' in text:
+            elif 'Yellow' in text or 'Amarillo' in text:
                 color = 'yellow'
-            elif 'Black' in text:
+            elif 'Black' in text or 'Negro' in text:
                 color = 'black'
             
             if color:
@@ -67,38 +67,43 @@ def extract_printer_data(html_content):
                 if match:
                     data['drum'][color] = int(match.group(1))
         
-        # Extract Belt Unit (only the first time we find it)
-        elif 'Belt Unit' == text and not data['belt_unit']:
+        # Extract Belt Unit (only the first time we find it) (Spanish: Unidad de correa)
+        elif ('Belt Unit' == text or 'Unidad de correa' == text) and not data['belt_unit']:
             match = re.search(r'(\d+)', value_text)
             if match:
                 data['belt_unit']['pages'] = int(match.group(1))
             # Search for the percentage in the next element
             next_dt = dt.find_next_sibling('dt')
-            if next_dt and 'Life Remaining' in next_dt.get_text():
-                next_dd = next_dt.find_next_sibling('dd')
-                if next_dd:
-                    match_pct = re.search(r'(\d+)%', next_dd.get_text())
-                    if match_pct:
-                        data['belt_unit']['percent'] = int(match_pct.group(1))
+            if next_dt:
+                next_text = next_dt.get_text()
+                if 'Life Remaining' in next_text or 'vida restante' in next_text.lower():
+                    next_dd = next_dt.find_next_sibling('dd')
+                    if next_dd:
+                        match_pct = re.search(r'(\d+)%', next_dd.get_text())
+                        if match_pct:
+                            data['belt_unit']['percent'] = int(match_pct.group(1))
         
-        # Extract Fuser Unit (only the first time we find it)
-        elif 'Fuser Unit' == text and not data['fuser_unit']:
+        # Extract Fuser Unit (only the first time we find it) (Spanish: Unidad de fusor)
+        elif ('Fuser Unit' == text or 'Unidad de fusor' == text) and not data['fuser_unit']:
             match = re.search(r'(\d+)', value_text)
             if match:
                 data['fuser_unit']['pages'] = int(match.group(1))
             # Search for the percentage in the next element
             next_dt = dt.find_next_sibling('dt')
-            if next_dt and 'Life Remaining' in next_dt.get_text():
-                next_dd = next_dt.find_next_sibling('dd')
-                if next_dd:
-                    match_pct = re.search(r'(\d+)%', next_dd.get_text())
-                    if match_pct:
-                        data['fuser_unit']['percent'] = int(match_pct.group(1))
+            if next_dt:
+                next_text = next_dt.get_text()
+                if 'Life Remaining' in next_text or 'vida restante' in next_text.lower():
+                    next_dd = next_dt.find_next_sibling('dd')
+                    if next_dd:
+                        match_pct = re.search(r'(\d+)%', next_dd.get_text())
+                        if match_pct:
+                            data['fuser_unit']['percent'] = int(match_pct.group(1))
     
-    # Extract Total Pages Printed
+    # Extract Total Pages Printed (Spanish: Total de páginas impresas)
     # Search for the "Total Pages Printed" section that has the overall total
     for h3 in soup.find_all('h3'):
-        if 'Total Pages Printed' in h3.get_text():
+        h3_text = h3.get_text()
+        if 'Total Pages Printed' in h3_text or 'Total de páginas impresas' in h3_text:
             # Search for the next dl with items_info_1line class
             dl = h3.find_next('dl', class_='items_info_1line')
             if dl:
@@ -121,13 +126,14 @@ def extract_printer_data(html_content):
                         span = dt.find('span')
                         if span:
                             span_text = span.get_text().strip()
-                            if span_text == 'Colour' and 'colour' not in data['pages_printed']:
+                            # Spanish: "Color" instead of "Colour", "ByN" instead of "B&W"
+                            if (span_text in ['Colour', 'Color']) and 'colour' not in data['pages_printed']:
                                 dd = dt.find_next_sibling('dd')
                                 if dd:
                                     match = re.search(r'(\d+)', dd.get_text())
                                     if match:
                                         data['pages_printed']['colour'] = int(match.group(1))
-                            elif span_text == 'B&W' and 'bw' not in data['pages_printed']:
+                            elif (span_text in ['B&W', 'ByN']) and 'bw' not in data['pages_printed']:
                                 dd = dt.find_next_sibling('dd')
                                 if dd:
                                     match = re.search(r'(\d+)', dd.get_text())
