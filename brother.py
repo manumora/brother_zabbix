@@ -373,8 +373,8 @@ def login_y_descargar_html(url_base, contrasena, ruta_destino="pagina_descargada
     
     # Form data for login
     login_data = {
-        "B1889": contrasena,
-        "loginurl": "/general/information.html?kind=item"
+        "B188e": contrasena,
+        "loginurl": "/home/status.html"
     }
     
     # URL for login
