@@ -377,41 +377,55 @@ def login_y_descargar_html(url_base, contrasena, ruta_destino="pagina_descargada
     
     # Form data for login
     login_data = {
-        "B188e": contrasena,
-        "loginurl": "/home/status.html"
+        "B1891": contrasena,
+        "loginurl": "/general/information.html?kind=item",
+        "pageid": "1"
     }
-    
+
     # URL for login
     login_url = f"{url_base}/home/status.html"
-    
+
     try:
-        # Perform the login request
+        # First, GET the login page to get the CSRF token and session cookie
         print("Attempting to login...")
-        response_login = session.post(login_url, data=login_data, verify=False)
-        response_login.raise_for_status()  # Check if there are errors in the response
-        
-        # Verify if login was successful (this depends on the site's behavior)
-        if "Iniciar sesión" in response_login.text:
+        response_get = session.get(login_url, verify=False)
+        response_get.raise_for_status()
+
+        # Extract CSRF token if present
+        soup = BeautifulSoup(response_get.text, 'html.parser')
+        csrf_input = soup.find('input', id='CSRFToken')
+        if csrf_input:
+            login_data['CSRFToken'] = csrf_input.get('value', '')
+
+        # Perform the login POST
+        response_login = session.post(login_url, data=login_data, verify=False, allow_redirects=True)
+        response_login.raise_for_status()
+
+        # Verify if login was successful (check both English and Spanish)
+        if "Please Login" in response_login.text or "Iniciar sesión" in response_login.text or "Please login" in response_login.text:
             print("Error: Could not login. Check the password.")
             return None
-        
+
         print("Login successful")
-        
-        # URL to download after login
-        # Here I'm using the URL provided in loginurl, but you can change it
-        target_url = f"{url_base}/general/information.html?kind=item"
-        
-        # Download the page after login
-        print(f"Downloading content from {target_url}...")
-        response_download = session.get(target_url, verify=False)
-        response_download.raise_for_status()
-        
+
+        # The POST response already contains the target page after redirect
+        # But if not, fetch the information page explicitly
+        html_content = response_login.text
+
+        # If the POST didn't redirect to the info page, fetch it directly
+        if "Toner" not in html_content and "Tóner" not in html_content and "toner" not in html_content.lower():
+            target_url = f"{url_base}/general/information.html?kind=item"
+            print(f"Downloading content from {target_url}...")
+            response_download = session.get(target_url, verify=False)
+            response_download.raise_for_status()
+            html_content = response_download.text
+
         # Save the downloaded HTML to a file
         with open(ruta_destino, "w", encoding="utf-8") as file:
-            file.write(response_download.text)
-        
+            file.write(html_content)
+
         print(f"HTML downloaded and saved to '{ruta_destino}'")
-        return response_download.text
+        return html_content
     
     except requests.exceptions.RequestException as e:
         print(f"Error during HTTP request: {e}")
