@@ -370,6 +370,10 @@ def login_y_descargar_html(url_base, contrasena, ruta_destino="pagina_descargada
     """
     # Create a session to maintain cookies
     session = requests.Session()
+
+    # Disable SSL verification (printer uses self-signed certificate)
+    import urllib3
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     
     # Form data for login
     login_data = {
@@ -383,7 +387,7 @@ def login_y_descargar_html(url_base, contrasena, ruta_destino="pagina_descargada
     try:
         # Perform the login request
         print("Attempting to login...")
-        response_login = session.post(login_url, data=login_data)
+        response_login = session.post(login_url, data=login_data, verify=False)
         response_login.raise_for_status()  # Check if there are errors in the response
         
         # Verify if login was successful (this depends on the site's behavior)
@@ -399,7 +403,7 @@ def login_y_descargar_html(url_base, contrasena, ruta_destino="pagina_descargada
         
         # Download the page after login
         print(f"Downloading content from {target_url}...")
-        response_download = session.get(target_url)
+        response_download = session.get(target_url, verify=False)
         response_download.raise_for_status()
         
         # Save the downloaded HTML to a file
